@@ -3,7 +3,7 @@ pub struct Trebuchet {
 }
 
 impl crate::Advent for Trebuchet {
-    fn new(data: &str) -> Self
+    fn new(_data: &str) -> Self
         where 
             Self: Sized {
         Self {}
