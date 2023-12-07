@@ -1,5 +1,7 @@
-use crate::utils::{point::{Coord, Point, Grid}, wait_user_input};
-use anyhow::{Result, Error, anyhow};
+use crate::utils::point::{Coord, Point, Grid, DIRECTIONS};
+use std::fmt;
+
+#[derive(Debug)]
 enum Space {
     Digit(char),
     Symbol(char),
@@ -21,11 +23,20 @@ impl From<char> for Space {
     }
 }
 
-type P = Point<usize, Space>;
+impl fmt::Display for Space {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Digit(d) => write!(f, "{}", d),
+            Self::Symbol(s) => write!(f, "{}", s),
+            Self::Empty => write!(f, ".")
+        }
+    }
+}
+
 type C = Coord<usize>;
 
 pub struct GearRatios {
-    engine_schematics: Grid<P>
+    engine_schematics: Grid<Space>
 }
 
 impl crate::Advent for GearRatios {
@@ -33,15 +44,13 @@ impl crate::Advent for GearRatios {
         where 
             Self: Sized {
 
-        let engine_schematic: Vec<Vec<P>> = data
+        let engine_schematic: Vec<Vec<Space>> = data
             .lines()
-            .enumerate()
-            .map(|(y, l)| {
+            .map(|l| {
                 l
                     .chars()
-                    .enumerate()
-                    .map(|(x, c)| {
-                        Point::new(x, y, Space::from(c))
+                    .map(|c| {
+                        Space::from(c)
                     }).collect()
             }).collect();
         
@@ -50,11 +59,113 @@ impl crate::Advent for GearRatios {
     }
 
     fn part_01(&self) -> String {
-        1.to_string()
+        let symbols: Vec<Point<usize, &Space>> = self.engine_schematics
+            .iter_points()
+            .filter(|p| {
+                match p.value {
+                    Space::Symbol(_s) => true,
+                    _ => false
+                }
+        }).collect();
+        let mut numbers: Vec<Point<usize, String>> = vec![];
+        let mut start_coord: Option<C> = None;
+        let mut number: String = String::new();
+        let numbers_it = self.engine_schematics.iter_points();
+        
+        numbers_it.for_each(|p| {
+            match p.value {
+                Space::Digit(d) => {
+                    if start_coord.is_none() {
+                        start_coord = Some(p.coord);
+                    }
+                    number.push(*d);                    
+                },
+                _ => {
+                    if number.len() > 0 {
+                        let number_point: Point<usize, String> = Point::from_coord(start_coord.unwrap(), number.clone());
+                        numbers.push(number_point);
+                        number = String::new();
+                        start_coord = None;
+                    }
+                }
+            }
+        });
+        let mut result: u32 = 0;
+        for symbol in symbols {
+            let neighbour_coords: Vec<_> = DIRECTIONS
+                .iter()
+                .filter_map(|direction| {
+                self.engine_schematics.get_neighbour(&symbol.coord, direction)
+            }).collect();
+            let neighbour_numbers: Vec<&Point<usize, String>> = numbers
+                .iter().filter(|n| {
+                    neighbour_coords.iter().any(|c| {
+                        if n.coord.y == c.y && n.coord.x <= c.x && n.coord.x + n.value.len() - 1 >= c.x {
+                            true
+                        } else {
+                            false
+                        }
+                    })                    
+                }).collect();
+            result += neighbour_numbers.iter().map(|p| p.value.parse::<u32>().unwrap()).sum::<u32>();
+        }        
+        result.to_string()
     }
 
     fn part_02(&self) -> String {
-        2.to_string()
+        let symbols: Vec<Point<usize, &Space>> = self.engine_schematics
+            .iter_points()
+            .filter(|p| {
+                match p.value {
+                    Space::Symbol('*') => true,
+                    _ => false
+                }
+        }).collect();
+        let mut numbers: Vec<Point<usize, String>> = vec![];
+        let mut start_coord: Option<C> = None;
+        let mut number: String = String::new();
+        let numbers_it = self.engine_schematics.iter_points();
+        
+        numbers_it.for_each(|p| {
+            match p.value {
+                Space::Digit(d) => {
+                    if start_coord.is_none() {
+                        start_coord = Some(p.coord);
+                    }
+                    number.push(*d);                    
+                },
+                _ => {
+                    if number.len() > 0 {
+                        let number_point: Point<usize, String> = Point::from_coord(start_coord.unwrap(), number.clone());
+                        numbers.push(number_point);
+                        number = String::new();
+                        start_coord = None;
+                    }
+                }
+            }
+        });
+        let mut result: u32 = 0;
+        for symbol in symbols {
+            let neighbour_coords: Vec<_> = DIRECTIONS
+                .iter()
+                .filter_map(|direction| {
+                self.engine_schematics.get_neighbour(&symbol.coord, direction)
+            }).collect();
+            let neighbour_numbers: Vec<&Point<usize, String>> = numbers
+                .iter().filter(|n| {
+                    neighbour_coords.iter().any(|c| {
+                        if n.coord.y == c.y && n.coord.x <= c.x && n.coord.x + n.value.len() - 1 >= c.x {
+                            true
+                        } else {
+                            false
+                        }
+                    })                    
+                }).collect();
+            if neighbour_numbers.len() == 2 {
+                result += neighbour_numbers.iter().map(|p| p.value.parse::<u32>().unwrap()).product::<u32>();
+            }            
+        }        
+        result.to_string()
     }
 }
 
