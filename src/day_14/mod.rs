@@ -1,9 +1,8 @@
-use crate::utils::{point::{Grid, Point, Coord, Direction, Axis, TOUCHING_DIRECTIONS}, wait_user_input};
-use std::{iter::once, collections::HashSet};
+use crate::utils::point::{Grid, Coord, Direction};
+use std::iter::once;
 
 pub struct ParabolicReflectorDish {
     grid: Grid<char>,
-    // rocks: Vec<C>,
     // pillars: Vec<C>
 }
 
@@ -15,62 +14,49 @@ impl crate::Advent for ParabolicReflectorDish {
             l.chars().collect()
         }).collect();
         let grid = Grid::new(map);
-        // let rocks: Vec<C> = grid.iter_points().filter(|p| *p.value == 'O').map(|p| p.coord).collect();
-        // let pillars = grid.iter_points().filter(|p| *p.value == '#').map(|p| p.coord).collect();
-        // grid.iter_points_mut().filter(|p| *p.value == 'O').for_each(|p| *p.value = '.');
         Self { grid }
     }
     
     fn part_01(&self) -> String {
-        // let mut rocks = self.rocks.clone();
         let mut grid = self.grid.clone();
         grid.tilt(Direction::N);
         grid.calculate_load_north().to_string()
-
-        // 1.to_string()
     }
 
     fn part_02(&self) -> String {
-        // let mut grid = self.grid.clone();
-        // let mut prev_rotation: [Option<Grid<char>>; 4] = [None, None, None, None];
-        // for rotation in 0..1_000_000_000 {
-        //     if rotation % 1_000_000 == 0{
-        //         println!("Rotation: {}", rotation);
-        //     }                   
-        //     for (i, dir) in [Direction::N, Direction::W, Direction::S, Direction::E].into_iter().enumerate() {
-                
-        //         grid.tilt(dir);
-        //         match &prev_rotation[i] {
-        //             Some(prev_grid) => {
-        //                 if prev_grid.map == grid.map {
-        //                     break;
-        //                 } else {
-        //                     let prev: HashSet<_> = prev_grid.iter_points().filter_map(|p| {
-        //                         if *p.value == 'O' {
-        //                             Some(p.coord)
-        //                         } else {
-        //                             None
-        //                         }                                
-        //                     }).collect();
-        //                     let current: HashSet<_> = grid.iter_points().filter_map(|p| {
-        //                         if *p.value == 'O' {
-        //                             Some(p.coord)
-        //                         } else {
-        //                             None
-        //                         }                                
-        //                     }).collect();
-        //                     println!("Diff: {:?}", prev.symmetric_difference(&current));
-        //                     wait_user_input();
-        //                 }
-        //             },
-        //             None => prev_rotation[i] = Some(grid.clone())
-        //         }                
-        //     }            
-            
-        // }
+        let mut grid = self.grid.clone();
+        let mut patterns: Vec<Vec<C>> = vec![];
+        let mut rotation = 0;
+        let num_rotations = 1_000_000_000;
+        while rotation < num_rotations {
+            if rotation % 1_000_000 == 0{
+                println!("Rotation: {}", rotation);
+            }                   
+            for dir in [Direction::N, Direction::W, Direction::S, Direction::E].into_iter() {                
+                grid.tilt(dir);                
+            }            
+            let rocks: Vec<C> = grid.iter_points().filter_map(|p| {
+                if *p.value == 'O' {
+                    Some(p.coord)
+                } else {
+                    None
+                }
+            }).collect();
+            let prev_pattern = patterns.iter().position(|p| *p == rocks);
+            match prev_pattern {
+                Some(prev_index) => {
+                    let occurance_span = rotation - prev_index;
+                    let remaining_rotations = num_rotations - rotation;
+                    let remainder = remaining_rotations % occurance_span;
+                    rotation = num_rotations - remainder;
+                    patterns.clear();
+                },
+                None => patterns.push(rocks)
+            }
+            rotation += 1;
+        }
         
-        // grid.calculate_load_north().to_string()
-        2.to_string()
+        grid.calculate_load_north().to_string()
     }
 }
 
